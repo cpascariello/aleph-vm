@@ -11,7 +11,7 @@ from aiohttp import web
 from yarl import URL
 
 from aleph_message import Message
-from aleph_message.models import BaseMessage
+from aleph_message.models import BaseMessage, ProgramMessage
 from .conf import settings
 from .pubsub import PubSub
 
@@ -48,12 +48,20 @@ async def watch_for_messages(dispatcher: PubSub):
 
     async for message in subscribe_via_ws(url):
         logger.info(f"Websocket received message: {message.item_hash}")
+
+        # Dispatch update to running VMs
         ref = (
             message.content.ref
             if hasattr(message.content, "ref")
             else message.item_hash
         )
         await dispatcher.publish(key=ref, value=message)
+
+        # Register new VM to run on future messages:
+        if isinstance(message, ProgramMessage):
+            if message.content.on.message:
+                await reactor.register(message)
+        await reactor.trigger(message=message)
 
 
 async def start_watch_for_messages_task(app: web.Application):
