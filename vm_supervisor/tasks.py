@@ -14,6 +14,7 @@ from aleph_message import Message
 from aleph_message.models import BaseMessage, ProgramMessage
 from .conf import settings
 from .pubsub import PubSub
+from .reactor import Reactor
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +40,7 @@ async def subscribe_via_ws(url) -> AsyncIterable[BaseMessage]:
                     break
 
 
-async def watch_for_messages(dispatcher: PubSub):
+async def watch_for_messages(dispatcher: PubSub, reactor: Reactor):
     """Watch for new Aleph messages"""
     logger.debug("watch_for_messages()")
     url = URL(f"{settings.API_SERVER}/api/ws0/messages").with_query(
@@ -67,8 +68,10 @@ async def watch_for_messages(dispatcher: PubSub):
 async def start_watch_for_messages_task(app: web.Application):
     logger.debug("start_watch_for_messages_task()")
     pubsub = PubSub()
+    reactor = Reactor(pubsub)
     app["pubsub"] = pubsub
-    app["messages_listener"] = asyncio.create_task(watch_for_messages(pubsub))
+    # app["reactor"] = reactor
+    app["messages_listener"] = asyncio.create_task(watch_for_messages(pubsub, reactor))
 
 
 async def stop_watch_for_messages_task(app: web.Application):
