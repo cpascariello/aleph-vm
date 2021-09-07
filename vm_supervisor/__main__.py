@@ -9,7 +9,8 @@ from typing import List, Tuple, Dict
 
 from aiohttp.web import Response
 
-from .run import run_code_on_request
+from vm_supervisor.pubsub import PubSub
+from .run import run_code_on_request, run_code_on_event
 from .models import VmHash
 from . import supervisor
 from .conf import settings
@@ -78,6 +79,7 @@ def parse_args(args):
         "-n",
         "--do-not-run",
         dest="do_not_run",
+        action="store_true",
         default=False,
     )
     parser.add_argument(
@@ -103,64 +105,68 @@ async def benchmark(runs: int):
     """
     ref = VmHash("TEST_HASH")
 
-    class FakeRequest:
-        headers: Dict[str, str]
-        raw_headers: List[Tuple[bytes, bytes]]
+    # class FakeRequest:
+    #     headers: Dict[str, str]
+    #     raw_headers: List[Tuple[bytes, bytes]]
+    #
+    # fake_request = FakeRequest()
+    # fake_request.match_info = {"ref": ref, "suffix": "/"}
+    # fake_request.method = "GET"
+    # fake_request.query_string = ""
+    #
+    # fake_request.headers = {"host": "127.0.0.1", "content-type": "application/json"}
+    # fake_request.raw_headers = [
+    #     (name.encode(), value.encode()) for name, value in fake_request.headers.items()
+    # ]
+    #
+    # # noinspection PyDeprecation
+    # fake_request.read = coroutine(lambda: b"")
+    #
+    # logger.info("--- Start benchmark ---")
+    #
+    # bench: List[float] = []
+    #
+    # # Does not make sense in benchmarks
+    # settings.WATCH_FOR_UPDATES = False
+    #
+    # # First test all methods
+    # settings.REUSE_TIMEOUT = 0.1
+    # for path in (
+    #     "/",
+    #     "/messages",
+    #     "/internet",
+    #     "/post_a_message",
+    #     "/cache/set/foo/bar",
+    #     "/cache/get/foo",
+    #     "/cache/keys",
+    # ):
+    #     fake_request.match_info["suffix"] = path
+    #     response: Response = await run_code_on_request(
+    #         vm_hash=ref, path=path, request=fake_request
+    #     )
+    #     assert response.status == 200
+    #
+    # # Disable VM timeout to exit benchmark properly
+    # settings.REUSE_TIMEOUT = 0 if runs == 1 else 0.1
+    # path = "/"
+    # for run in range(runs):
+    #     t0 = time.time()
+    #     fake_request.match_info["suffix"] = path
+    #     response: Response = await run_code_on_request(
+    #         vm_hash=ref, path=path, request=fake_request
+    #     )
+    #     assert response.status == 200
+    #     bench.append(time.time() - t0)
+    #
+    # logger.info(
+    #     f"BENCHMARK: n={len(bench)} avg={mean(bench):03f} "
+    #     f"min={min(bench):03f} max={max(bench):03f}"
+    # )
+    # logger.info(bench)
 
-    fake_request = FakeRequest()
-    fake_request.match_info = {"ref": ref, "suffix": "/"}
-    fake_request.method = "GET"
-    fake_request.query_string = ""
-
-    fake_request.headers = {"host": "127.0.0.1", "content-type": "application/json"}
-    fake_request.raw_headers = [
-        (name.encode(), value.encode()) for name, value in fake_request.headers.items()
-    ]
-
-    # noinspection PyDeprecation
-    fake_request.read = coroutine(lambda: b"")
-
-    logger.info("--- Start benchmark ---")
-
-    bench: List[float] = []
-
-    # Does not make sense in benchmarks
-    settings.WATCH_FOR_UPDATES = False
-
-    # First test all methods
-    settings.REUSE_TIMEOUT = 0.1
-    for path in (
-        "/",
-        "/messages",
-        "/internet",
-        "/post_a_message",
-        "/cache/set/foo/bar",
-        "/cache/get/foo",
-        "/cache/keys",
-    ):
-        fake_request.match_info["suffix"] = path
-        response: Response = await run_code_on_request(
-            vm_hash=ref, path=path, request=fake_request
-        )
-        assert response.status == 200
-
-    # Disable VM timeout to exit benchmark properly
-    settings.REUSE_TIMEOUT = 0 if runs == 1 else 0.1
-    path = "/"
-    for run in range(runs):
-        t0 = time.time()
-        fake_request.match_info["suffix"] = path
-        response: Response = await run_code_on_request(
-            vm_hash=ref, path=path, request=fake_request
-        )
-        assert response.status == 200
-        bench.append(time.time() - t0)
-
-    logger.info(
-        f"BENCHMARK: n={len(bench)} avg={mean(bench):03f} "
-        f"min={min(bench):03f} max={max(bench):03f}"
-    )
-    logger.info(bench)
+    event = None
+    result = await run_code_on_event(vm_hash=ref, event=event, pubsub=PubSub())
+    print("Event result", result)
 
 
 def main():

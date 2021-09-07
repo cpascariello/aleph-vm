@@ -225,7 +225,8 @@ async def run_python_code_http(application: ASGIApplication, scope: dict
         body: bytes = scope.pop('body')
 
         async def receive():
-            return {'type': 'http.request',
+            type_ = 'http.request' if scope['type'] in ('http', 'websocket') else 'aleph.event'
+            return {'type': type_,
                     'body': body,
                     'more_body': False}
 
@@ -326,8 +327,8 @@ async def process_instruction(
             output_data: Optional[bytes]
 
             if interface == Interface.asgi:
-                headers, body, output, output_data = \
-                    await run_python_code_http(application=application, scope=payload.scope)
+                    headers, body, output, output_data = \
+                        await run_python_code_http(application=application, scope=payload.scope)
             elif interface == Interface.executable:
                 headers, body, output, output_data = \
                     await run_executable_http(scope=payload.scope)

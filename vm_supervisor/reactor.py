@@ -1,6 +1,8 @@
 from typing import List, Dict
 
 from aleph_message.models import Message, ProgramMessage
+from vm_supervisor.pubsub import PubSub
+from vm_supervisor.run import run_code_on_event
 
 
 def is_equal_or_includes(value, compare_to) -> bool:
@@ -27,16 +29,25 @@ def subscription_matches(subscription: Dict, message: ProgramMessage) -> bool:
 
 class Reactor:
 
+    pubsub: PubSub
     listeners: List[ProgramMessage]
 
-    def __init__(self):
+    def __init__(self, pubsub: PubSub):
+        self.pubsub = pubsub
         self.listeners = []
 
-    def trigger(self, message: Message):
+    async def trigger(self, message: Message):
         for listener in self.listeners:
             if not listener.content.on.message:
                 continue
-            for subscription in listener.content.on.message:
-                if subscription_matches(subscription, message):
-                    run_vm(...)
-                    break
+            for entrypoint in listener.content.on.message:
+                for subscription in listener.content.on.message[entrypoint]:
+                    if subscription_matches(subscription, message):
+                        vm_hash = listener.item_hash
+                        event = message.json()
+                        # TODO: Run in parallel / asynchronously
+                        await run_code_on_event(vm_hash, event, self.pubsub)
+                        break
+
+    def register(self, message: ProgramMessage):
+        raise NotImplementedError()
