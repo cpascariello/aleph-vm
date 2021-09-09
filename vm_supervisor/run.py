@@ -170,15 +170,9 @@ async def run_code_on_event(vm_hash: VmHash, event, pubsub: PubSub):
                 content_type="text/plain",
             )
 
-        headers = {
-            key.decode(): value.decode() for key, value in result["headers"]["headers"]
-        }
+        logger.info(f"Result: {result['body']}")
+        return result['body']
 
-        return web.Response(
-            status=result["headers"]["status"],
-            body=result["body"]["body"],
-            headers=headers,
-        )
     except UnpackValueError as error:
         logger.exception(error)
         return web.Response(status=502, reason="Invalid response from VM")
