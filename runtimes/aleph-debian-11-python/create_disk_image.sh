@@ -20,13 +20,15 @@ apt-get install -y --no-install-recommends --no-install-suggests \
   python3-pip python3-cytoolz python3-pydantic \
   iproute2 unzip \
   nodejs npm \
-  git
+  git iputils-ping
 
 pip3 install fastapi django
 
 echo "Pip installing aleph-client"
 #pip3 install 'aleph-client>=0.2.7' 'coincurve==15.0.0'
+pip3 install 'git+https://github.com/aleph-im/aleph-message.git@hoh-vm-on-message'
 pip3 install 'git+https://github.com/aleph-im/aleph-client.git@hoh-aleph-app' 'coincurve==15.0.0'
+pip3 install 'git+https://github.com/aleph-im/aleph-message.git@hoh-vm-on-message'
 
 # Compile all Python bytecode
 python3 -m compileall -f /usr/local/lib/python3.9

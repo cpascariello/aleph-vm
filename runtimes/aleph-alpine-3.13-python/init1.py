@@ -121,6 +121,18 @@ def setup_network(ip: Optional[str], route: Optional[str],
         for server in dns_servers:
             resolvconf_fd.write(f"nameserver {server}\n".encode())
 
+    system("ip a")
+    system("cat /etc/resolv.conf")
+
+    system("ping -c 1 -W 0.1 9.9.9.9")
+    system("ping -c 1 -W 0.1 aleph.im")
+
+
+def setup_ssh(config):
+    logger.debug("Setting up SSH")
+    system("/usr/sbin/sshd -E /var/log/sshd")
+    logger.debug("Setup SSH done")
+
 
 def setup_input_data(input_data: bytes):
     logger.debug("Extracting data")
@@ -396,6 +408,7 @@ def setup_system(config: ConfigurationPayload):
     setup_hostname(config.vm_hash)
     setup_volumes(config.volumes)
     setup_network(config.ip, config.route, config.dns_servers)
+    setup_ssh(config)
     setup_input_data(config.input_data)
     logger.debug("Setup finished")
 
